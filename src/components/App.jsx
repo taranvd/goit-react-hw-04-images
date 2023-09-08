@@ -22,33 +22,31 @@ export const App = () => {
       return;
     }
 
-    loadImages();
+    setTimeout(async () => {
+      setIsLoading(true);
+      const normalizeQuery = query.slice(8, query.length);
+
+      try {
+        const { hits, totalHits } = await fetchImages(normalizeQuery, page);
+        if (totalHits !== 0 && totalImg === 0) {
+          success(`Find ${totalHits} images`);
+        }
+        setImages(prevState => [...prevState, ...hits]);
+        setTotalImg(totalHits);
+
+        if (images.length + hits.length === totalHits && totalImg > 0) {
+          info('No more photos!');
+        } else if (totalHits === 0) {
+          warn('Image not found. Try something else 😐');
+        }
+      } catch (warn) {
+        console.warn(warn);
+        error('Oops! something went wrong. Please try again later. ❌');
+      } finally {
+        setIsLoading(false);
+      }
+    });
   }, [page, query]);
-
-  async function loadImages() {
-    setIsLoading(true);
-    const normalizeQuery = query.slice(8, query.length);
-
-    try {
-      const { hits, totalHits } = await fetchImages(normalizeQuery, page);
-      if (totalHits !== 0 && totalImg === 0) {
-        success(`Find ${totalHits} images`);
-      }
-      setImages(prevState => [...prevState, ...hits]);
-      setTotalImg(totalHits);
-
-      if (images.length + hits.length === totalHits && totalImg > 0) {
-        info('No more photos!');
-      } else if (totalHits === 0) {
-        warn('Image not found. Try something else 😐');
-      }
-    } catch (warn) {
-      console.warn(warn);
-      error('Oops! something went wrong. Please try again later. ❌');
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   function handleQueryFormSubmit(newQuery) {
     if (newQuery.trim() === '') {
