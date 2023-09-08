@@ -22,31 +22,34 @@ export const App = () => {
       return;
     }
 
-    setTimeout(async () => {
+    async function loadImages() {
       setIsLoading(true);
       const normalizeQuery = query.slice(8, query.length);
 
       try {
         const { hits, totalHits } = await fetchImages(normalizeQuery, page);
-        if (totalHits !== 0 && totalImg === 0) {
+        if (totalHits !== 0 && page === 0) {
           success(`Find ${totalHits} images`);
-        }
-        setImages(prevState => [...prevState, ...hits]);
-        setTotalImg(totalHits);
-
-        if (images.length + hits.length === totalHits && totalImg > 0) {
-          info('No more photos!');
         } else if (totalHits === 0) {
           warn('Image not found. Try something else 😐');
         }
+        setImages(prevState => [...prevState, ...hits]);
+        setTotalImg(totalHits);
       } catch (warn) {
         console.warn(warn);
         error('Oops! something went wrong. Please try again later. ❌');
       } finally {
         setIsLoading(false);
       }
-    });
+    }
+    loadImages();
   }, [page, query]);
+
+  useEffect(() => {
+    if (images.length === totalImg && totalImg > 0 && page !== 1) {
+      info('No more photos!');
+    }
+  }, [images.length, page, totalImg]);
 
   function handleQueryFormSubmit(newQuery) {
     if (newQuery.trim() === '') {
