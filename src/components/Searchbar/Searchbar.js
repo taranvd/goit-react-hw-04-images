@@ -1,41 +1,36 @@
-import { Component } from 'react';
 import { BsSearch } from 'react-icons/bs';
 import './Searchbar.css';
+import { useState } from 'react';
 
-export class Searchbar extends Component {
-  state = {
-    query: '',
+export const Searchbar = ({ onSubmit }) => {
+  const [query, setQuery] = useState('');
+
+  const handleQueryChange = event => {
+    setQuery(event.target.value);
   };
 
-  handleQueryChange = event => {
-    this.setState({ query: event.target.value });
-  };
-
-  handleSubmitForm = e => {
+  const handleSubmitForm = e => {
     e.preventDefault();
-    this.props.onSubmit(this.state.query);
-    e.target.reset();
+    onSubmit(query);
   };
 
-  render() {
-    return (
-      <header className="Searchbar">
-        <form className="SearchForm" onSubmit={this.handleSubmitForm}>
-          <button type="submit" className="SearchForm-button ">
-            <BsSearch size="20" />
-          </button>
+  return (
+    <header className="Searchbar">
+      <form className="SearchForm" onSubmit={handleSubmitForm}>
+        <button type="submit" className="SearchForm-button ">
+          <BsSearch size="20" />
+        </button>
 
-          <input
-            className="SearchForm-input"
-            type="text"
-            name="query"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            onChange={this.handleQueryChange}
-          />
-        </form>
-      </header>
-    );
-  }
-}
+        <input
+          className="SearchForm-input"
+          type="text"
+          name="query"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          onChange={handleQueryChange}
+        />
+      </form>
+    </header>
+  );
+};

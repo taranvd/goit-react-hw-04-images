@@ -1,4 +1,5 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
+
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { AppWrapp, GlobalStyled } from './GlobalStyle';
@@ -9,91 +10,74 @@ import { fetchImages } from 'services/api';
 import { ToastContainer } from 'react-toastify';
 import { nanoid } from 'nanoid';
 
-export class App extends Component {
-  state = {
-    query: '',
-    images: [],
-    page: 1,
-    totalImg: 0,
-    isLoading: false,
-  };
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalImg, setTotalImg] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query: prevQuery, page: prevPage } = prevState;
-    const { page, query, totalImg, images } = this.state;
+  useEffect(() => {
+    if (query === '') {
+      return;
+    }
+
+    loadImages();
+  }, [page, query]);
+
+  async function loadImages() {
+    setIsLoading(true);
     const normalizeQuery = query.slice(8, query.length);
 
-    if (query === '') {
+    try {
+      const { hits, totalHits } = await fetchImages(normalizeQuery, page);
+      if (totalHits !== 0 && totalImg === 0) {
+        success(`Find ${totalHits} images`);
+      }
+      setImages(prevState => [...prevState, ...hits]);
+      setTotalImg(totalHits);
+
+      if (images.length + hits.length === totalHits && totalImg > 0) {
+        info('No more photos!');
+      } else if (totalHits === 0) {
+        warn('Image not found. Try something else 😐');
+      }
+    } catch (warn) {
+      console.warn(warn);
+      error('Oops! something went wrong. Please try again later. ❌');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleQueryFormSubmit(newQuery) {
+    if (newQuery.trim() === '') {
       warn('Please enter something 👀');
       return;
     }
 
-    if (prevQuery !== query || prevPage !== page) {
-      this.setState({ isLoading: true });
-
-      setTimeout(async () => {
-        try {
-          const { hits, totalHits } = await fetchImages(normalizeQuery, page);
-
-          if (totalHits !== 0 && totalImg === 0) {
-            success(`Find ${totalHits} images`);
-          }
-
-          this.setState(prevState => ({
-            images:
-              prevState.images.length === 0
-                ? hits
-                : [...prevState.images, ...hits],
-            totalImg: totalHits,
-          }));
-
-          if (images.length + hits.length === totalHits && totalImg > 0) {
-            info('No more photos!');
-          } else if (totalHits === 0) {
-            warn('Image not found. Try something else 😐');
-          }
-        } catch (warn) {
-          console.warn(warn);
-          error('Oops! something went wrong. Please try again later. ❌');
-        } finally {
-          this.setState({ isLoading: false });
-        }
-      });
-    }
+    setQuery(`${nanoid(7)}/${newQuery}`);
+    setImages([]);
+    setPage(1);
+    setTotalImg(0);
   }
 
-  handleQueryFormSubmit = newQuery =>
-    this.setState({
-      query: `${nanoid(7)}/${newQuery}`,
-      images: [],
-      page: 1,
-      totalImg: 0,
-    });
+  const handleLoadMoreButton = () => setPage(prevPage => prevPage + 1);
 
-  handleLoadMoreButton = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  };
+  const shouldRenderButton =
+    !isLoading && images.length > 0 && images.length < totalImg;
 
-  render() {
-    const { images, totalImg, isLoading } = this.state;
-    return (
-      <AppWrapp>
-        <Searchbar onSubmit={this.handleQueryFormSubmit} />
-        <ImageGallery images={images} />
+  return (
+    <AppWrapp>
+      <Searchbar onSubmit={handleQueryFormSubmit} />
+      <ImageGallery images={images} />
 
-        {isLoading && <Loader />}
+      {isLoading && <Loader />}
 
-        {isLoading ||
-        images.length === 0 ||
-        images.length === totalImg ? null : (
-          <Button loadMore={this.handleLoadMoreButton} />
-        )}
+      {shouldRenderButton && <Button loadMore={handleLoadMoreButton} />}
 
-        <ToastContainer />
-        <GlobalStyled />
-      </AppWrapp>
-    );
-  }
-}
+      <ToastContainer />
+      <GlobalStyled />
+    </AppWrapp>
+  );
+};
